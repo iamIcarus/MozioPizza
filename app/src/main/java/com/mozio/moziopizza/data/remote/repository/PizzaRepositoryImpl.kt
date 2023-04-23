@@ -31,14 +31,12 @@ class PizzaRepositoryImpl @Inject constructor(
                 // pizzaApiService should only get the data and
                 // PizzaDao should only do the I/O
 
-
                 // Get the local hash from the database
                 val localHash = pizzaDao.getDataHash()
 
                 // we don't have data, block the UI and show loading , this may take a while
-                if (localHash == null) {
-                    emit(Resource.Loading)
-                }
+                emit(Resource.Loading)
+
 
                  // Fetch pizza menu from the API
                 val responseBody = pizzaApiService.getPizza()
@@ -66,15 +64,18 @@ class PizzaRepositoryImpl @Inject constructor(
                     val pizzaList = pizzaListAdapter.fromJson(responseData)
 
                     // Create a response object with the parsed data and the remote hash
-                    val response = PizzaResponse(pizzaList ?: listOf(), remoteHash, null)
+                    val response = PizzaResponse(items = pizzaList ?: listOf(), remoteHash, errorMessage = null)
 
                     // Save pizza data to database
                     pizzaDao.deleteAllPizzas()
                     pizzaDao.insertAllPizzas(response.items)
                     pizzaDao.updateDataHash(HashEntity(id = 1, dataHash = remoteHash))
-                    emit(Resource.Success(response))
+                    emit(Resource.Success(response , isNew = true))
                 } else {
-                    emit(Resource.Success(null,  "No new data available"))
+
+                    val response = PizzaResponse(pizzaDao.getAllPizzas(), localHash,  errorMessage = null)
+
+                    emit(Resource.Success(response,  isNew = false))
                 }
 
             } catch (e: Exception) {
